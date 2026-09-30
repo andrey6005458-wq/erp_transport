@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from app.core.security import verify_password
-from app.crud.user import create_user
+from app.crud.user import create_user, get_user_by_id
 from app.schemas.user import UserCreate
 
 
@@ -40,3 +40,23 @@ async def test_create_user_duplicate_email(db_session):
         await create_user(db_session, user_in)
 
     await db_session.rollback()
+
+
+async def test_get_user_by_id(db_session):
+    """get_user_by_id возвращает пользовалетя по id."""
+    user_in = UserCreate(email="bob@example.com", password="secret123")
+
+    created = await create_user(db_session, user_in)
+
+    found = await get_user_by_id(db_session, created.id)
+
+    assert found is not None
+    assert found.id == created.id
+    assert found.email == "bob@example.com"
+
+
+async def test_get_user_by_id_not_found(db_session):
+    """get_user_by_id возвращает None, если пользователя нет."""
+    found = await get_user_by_id(db_session, 99999)
+
+    assert found is None
