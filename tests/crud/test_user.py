@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from app.core.security import verify_password
-from app.crud.user import create_user, get_user_by_id
+from app.crud.user import create_user, get_user_by_email, get_user_by_id
 from app.schemas.user import UserCreate
 
 
@@ -58,5 +58,24 @@ async def test_get_user_by_id(db_session):
 async def test_get_user_by_id_not_found(db_session):
     """get_user_by_id возвращает None, если пользователя нет."""
     found = await get_user_by_id(db_session, 99999)
+
+    assert found is None
+
+
+async def test_get_user_by_email(db_session):
+    """get_user_by_email возвращает пользователя по email."""
+    user_in = UserCreate(email="bob@example.com", password="secret123")
+
+    created = await create_user(db_session, user_in)
+
+    found = await get_user_by_email(db_session, created.email)
+
+    assert found is not None
+    assert found.email == "bob@example.com"
+
+
+async def test_get_user_by_email_not_found(db_session):
+    """get_user_by_email возвращает None, если email не найден."""
+    found = await get_user_by_email(db_session, "nobody@example.com")
 
     assert found is None
