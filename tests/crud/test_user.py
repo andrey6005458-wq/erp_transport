@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from app.core.security import verify_password
-from app.crud.user import create_user, get_user_by_email, get_user_by_id
+from app.crud.user import create_user, get_user_by_email, get_user_by_id, list_users
 from app.schemas.user import UserCreate
 
 
@@ -79,3 +79,46 @@ async def test_get_user_by_email_not_found(db_session):
     found = await get_user_by_email(db_session, "nobody@example.com")
 
     assert found is None
+
+
+async def test_list_users_empty(db_session):
+    """list_users возвращает пустой список, если пользователей нет."""
+    users = await list_users(db_session)
+
+    assert users == []
+
+
+async def test_list_users(db_session):
+    """list_users возвращает всех пользователей, отсортированных по id."""
+    await create_user(
+        db_session, UserCreate(email="bob@example.com", password="secret123")
+    )
+    await create_user(
+        db_session, UserCreate(email="kit@example.com", password="secret456")
+    )
+    await create_user(
+        db_session, UserCreate(email="tik@example.com", password="secret789")
+    )
+
+    users = await list_users(db_session)
+
+    assert len(users) == 3
+    assert [u.email for u in users] == [
+        "bob@example.com",
+        "kit@example.com",
+        "tik@example.com",
+    ]
+
+
+async def test_list_users_pagination(db_session):
+    """list_users уважает skip и limit."""
+    for i in range(5):
+        await create_user(
+            db_session,
+            UserCreate(email=f"user{i}@example.com", password="secret123"),
+        )
+
+    page = await list_users(db_session, skip=1, limit=2)
+
+    assert len(page) == 2
+    assert [u.email for u in page] == ["user1@example.com", "user2@example.com"]
