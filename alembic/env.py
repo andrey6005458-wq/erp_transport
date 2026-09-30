@@ -1,21 +1,27 @@
+import os
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from app.core.config import settings
-from app.database.base import Base
+from alembic import context
 
 # Импортируем модели, чтобы они зарегистрировались в Base.metadata
 from app import models  # noqa: F401
+from app.core.config import settings
+from app.database.base import Base
 
 # Alembic Config
 config = context.config
 
-# Устанавливаем URL из settings
-config.set_main_option("sqlalchemy.url", settings.database_url)
+# URL миграций:
+# 1) Если задана переменная окружения ALEMBIC_DATABASE_URL — используем её.
+#    Это способ прогнать миграции против тестовой БД:
+#    ALEMBIC_DATABASE_URL=...erp_transport_test uv run alembic upgrade head
+# 2) Иначе — берём из настроек приложения (dev/prod).
+database_url = os.getenv("ALEMBIC_DATABASE_URL") or settings.database_url
+config.set_main_option("sqlalchemy.url", database_url)
 
 # Логирование
 if config.config_file_name is not None:
