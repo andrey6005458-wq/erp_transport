@@ -1,5 +1,8 @@
 """Тесты для app/crud/user.py."""
 
+import pytest
+from sqlalchemy.exc import IntegrityError
+
 from app.core.security import verify_password
 from app.crud.user import create_user
 from app.schemas.user import UserCreate
@@ -21,3 +24,19 @@ async def test_create_user(db_session):
     assert user.hashed_password != "secret123"
     assert verify_password("secret123", user.hashed_password) is True
     assert user.is_active is True
+
+
+async def test_create_user_duplicate_email(db_session):
+    """create_user падает на дубликате email (UNIQUE constraint).
+
+    IntegrityError — исключение SQLAlchemy на нарушение ограничений БД.
+    После него сессия в невалидном состоянии, нужен rollback.
+    """
+    user_in = UserCreate(email="alice@example.com", password="secret123")
+
+    await create_user(db_session, user_in)
+
+    with pytest.raises(IntegrityError):
+        await create_user(db_session, user_in)
+
+    await db_session.rollback()
