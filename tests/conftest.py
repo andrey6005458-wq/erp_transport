@@ -1,0 +1,144 @@
+"""Общие фикстуры для тестов.
+
+Тестовая БД — отдельный Postgres-контейнер (порт 5433,
+см. docker-compose.test.yml). Переменные читаются из .env.test.
+
+Схема накатывается Alembic-миграциями один раз при старте pytest —
+в хуке pytest_configure, до того как pytest-asyncio откроет event loop.
+Каждый тест выполняется в своей транзакции и откатывается после
+завершения — благодаря SAVEPOINT-паттерну SQLAlchemy БД остаётся чистой,
+а тесты независимы друг от друга.
+"""
+
+import os
+from collections.abc import AsyncGenerator
+from pathlib import Path
+
+import pytest_asyncio
+from dotenv import load_dotenv
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import (
+    AsyncConnection,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+
+# .env.test читаем ДО импорта app.* — иначе Settings создастся
+# с dev-настройками из .env, и мы не сможем переопределить URL.
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+load_dotenv(_PROJECT_ROOT / ".env.test", override=True)
+
+
+# --- Импорты приложения — после .env.test ---
+from app.database.session import session_getter  # noqa: E402
+from app.main import app  # noqa: E402
+
+
+def _build_test_database_url() -> str:
+    """Собирает TEST_DATABASE_URL из переменных окружения .env.test.
+
+    Формат совпадает с Settings.database_url (psycopg, async).
+    Если в .env.test задан TEST_DATABASE_URL — используется он.
+    """
+    explicit = os.getenv("TEST_DATABASE_URL")
+    if explicit:
+        return explicit
+
+    user = os.environ["POSTGRES_USER"]
+    password = os.environ["POSTGRES_PASSWORD"]
+    host = os.environ["POSTGRES_HOST"]
+    port = os.environ["POSTGRES_PORT"]
+    db = os.environ["POSTGRES_DB"]
+    return f"postgresql+psycopg://{user}:{password}@{host}:{port}/{db}"
+
+
+TEST_DATABASE_URL = _build_test_database_url()
+
+
+def pytest_configure(config):
+    """Накатывает Alembic-миграции на тестовую БД ДО старта event loop.
+
+    pytest_configure вызывается один раз при старте pytest, до сбора
+    тестов и до того, как pytest-asyncio откроет свой event loop.
+    Значит, alembic может спокойно вызвать asyncio.run() внутри себя.
+    """
+    from alembic.config import Config
+
+    from alembic import command
+
+    alembic_cfg = Config(str(_PROJECT_ROOT / "alembic.ini"))
+    alembic_cfg.set_main_option("script_location", str(_PROJECT_ROOT / "alembic"))
+    alembic_cfg.set_main_option("sqlalchemy.url", TEST_DATABASE_URL)
+    command.upgrade(alembic_cfg, "head")
+
+
+@pytest_asyncio.fixture(scope="session")
+async def test_engine():
+    """Async-движок к тестовой БД. Один на всю сессию тестов.
+
+    echo=False — иначе SQL-логи утопят вывод pytest.
+    """
+    engine = create_async_engine(
+        TEST_DATABASE_URL,
+        echo=False,
+        pool_pre_ping=True,
+    )
+    yield engine
+    await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def db_connection(test_engine) -> AsyncGenerator[AsyncConnection]:
+    """Соединение к тестовой БД с открытой внешней транзакцией.
+
+    Все commit() внутри теста попадают в SAVEPOINT, а не в эту
+    транзакцию. После теста она откатывается — БД чистая.
+    """
+    async with test_engine.connect() as connection:
+        transaction = await connection.begin()
+        try:
+            yield connection
+        finally:
+            await transaction.rollback()
+
+
+@pytest_asyncio.fixture
+async def db_session(db_connection) -> AsyncGenerator[AsyncSession]:
+    """AsyncSession, привязанная к внешней транзакции через SAVEPOINT.
+
+    join_transaction_mode='create_savepoint' — ключевой параметр:
+    без него commit() внутри CRUD отправит данные в outer transaction,
+    и rollback в фикстуре выше не спасёт.
+    """
+    session_maker = async_sessionmaker(
+        bind=db_connection,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        join_transaction_mode="create_savepoint",
+    )
+    async with session_maker() as session:
+        yield session
+
+
+@pytest_asyncio.fixture
+async def client(db_session) -> AsyncGenerator[AsyncClient]:
+    """httpx.AsyncClient, ходящий в FastAPI через ASGITransport.
+
+    Подменяет зависимость session_getter на тестовую сессию через
+    app.dependency_overrides. Роутеры этого не замечают.
+    """
+
+    async def _override_session_getter() -> AsyncGenerator[AsyncSession]:
+        yield db_session
+
+    app.dependency_overrides[session_getter] = _override_session_getter
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+    ) as ac:
+        yield ac
+
+    app.dependency_overrides.clear()
