@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from sqlalchemy import text
 
+from app.api.v1 import api_router
 from app.core.config import settings
 from app.database.engine import async_engine
 
@@ -26,6 +27,9 @@ app = FastAPI(
 )
 
 
+app.include_router(api_router, prefix="/api/v1")
+
+
 @app.get("/health", tags=["Health"])
 async def health():
     """Liveness: приложение живо."""
@@ -43,6 +47,6 @@ async def ready():
         async with async_engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
         return {"status": "ready"}
-    except Exception:
+    except Exception as err:
         logger.exception("Database health check failed")
-        raise HTTPException(status_code=503, detail="Database unavailable")
+        raise HTTPException(status_code=503, detail="Database unavailable") from err
