@@ -173,3 +173,71 @@ async def test_update_user_phone(db_session):
     assert updated.email == "user@example.com"
     assert updated.phone == "+79189861084"
     assert updated.hashed_password == old_hash
+
+
+async def test_update_user_password(db_session):
+    """update_user перехеширует новый пароль, старый больше не подходит"""
+    user = await create_user(
+        db_session,
+        UserCreate(
+            email="user@example.com", phone="+79782234038", password="old_secret"
+        ),
+    )
+    old_hash = user.hashed_password
+
+    updated = await update_user(
+        db_session,
+        user,
+        UserUpdate(password="new_secret"),
+    )
+
+    assert updated.hashed_password != old_hash
+    assert verify_password("new_secret", updated.hashed_password) is True
+    assert updated.email == "user@example.com"
+    assert updated.phone == "+79782234038"
+
+
+async def test_update_user_multiple_fields(db_session):
+    """update_user обновляет email, phone и password за один вызов"""
+    user = await create_user(
+        db_session,
+        UserCreate(
+            email="old@example.com", phone="+79993334455", password="old_secret"
+        ),
+    )
+    old_hash = user.hashed_password
+
+    updated = await update_user(
+        db_session,
+        user,
+        UserUpdate(
+            email="new@example.com", phone="+79782758271", password="new_secret"
+        ),
+    )
+
+    assert updated.email == "new@example.com"
+    assert updated.phone == "+79782758271"
+    assert updated.hashed_password != old_hash
+    assert verify_password("new_secret", updated.hashed_password) is True
+    assert verify_password("old_secret", updated.hashed_password) is False
+
+
+async def test_update_user_empty_patch(db_session):
+    """update_user с пустым UserUpdate() не меняет ничего."""
+    user = await create_user(
+        db_session,
+        UserCreate(
+            email="user@example.com",
+            phone="+79782234038",
+            password="secret123",
+        ),
+    )
+    old_hash = user.hashed_password
+    old_id = user.id
+
+    updated = await update_user(db_session, user, UserUpdate())
+
+    assert updated.id == old_id
+    assert updated.email == "user@example.com"
+    assert updated.phone == "+79782234038"
+    assert updated.hashed_password == old_hash
