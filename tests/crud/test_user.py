@@ -241,3 +241,25 @@ async def test_update_user_empty_patch(db_session):
     assert updated.email == "user@example.com"
     assert updated.phone == "+79782234038"
     assert updated.hashed_password == old_hash
+
+
+async def test_update_user_password_null(db_session):
+    """UpdateUser(password=None) не меняет пароль и не падает."""
+    user = await create_user(
+        db_session,
+        UserCreate(
+            email="user@example.com",
+            phone="+79782234038",
+            password="secret123",
+        ),
+    )
+    old_hash = user.hashed_password
+
+    updated = await update_user(
+        db_session,
+        user,
+        UserUpdate(password=None),
+    )
+
+    assert updated.hashed_password == old_hash
+    assert verify_password("secret123", updated.hashed_password) is True
