@@ -51,7 +51,7 @@ async def update_user(
     """Частично обновляет пользователя по PATCH-семантике."""
     update_data = user_in.model_dump(exclude_unset=True)
 
-    if "password" in update_data:
+    if update_data.get("password") is not None:
         update_data["hashed_password"] = hash_password(update_data.pop("password"))
 
     for field, value in update_data.items():
