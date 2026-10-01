@@ -4,8 +4,14 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from app.core.security import verify_password
-from app.crud.user import create_user, get_user_by_email, get_user_by_id, list_users
-from app.schemas.user import UserCreate
+from app.crud.user import (
+    create_user,
+    get_user_by_email,
+    get_user_by_id,
+    list_users,
+    update_user,
+)
+from app.schemas.user import UserCreate, UserUpdate
 
 
 async def test_create_user(db_session):
@@ -122,3 +128,48 @@ async def test_list_users_pagination(db_session):
 
     assert len(page) == 2
     assert [u.email for u in page] == ["user1@example.com", "user2@example.com"]
+
+
+async def test_update_user_email(db_session):
+    """update_user обновляет email, не трогая остальные поля."""
+    user = await create_user(
+        db_session,
+        UserCreate(
+            email="old@example.com",
+            password="secret123",
+            phone="+79787821815",
+        ),
+    )
+    old_hash = user.hashed_password
+
+    updated = await update_user(
+        db_session,
+        user,
+        UserUpdate(email="new@example.com"),
+    )
+
+    assert updated.id == user.id
+    assert updated.email == "new@example.com"
+    assert updated.phone == "+79787821815"
+    assert updated.hashed_password == old_hash
+
+
+async def test_update_user_phone(db_session):
+    """update_user обновляет phone, не трогая остальные поля."""
+    user = await create_user(
+        db_session,
+        UserCreate(
+            email="user@example.com", password="secret123", phone="+79787821815"
+        ),
+    )
+    old_hash = user.hashed_password
+
+    updated = await update_user(
+        db_session,
+        user,
+        UserUpdate(phone="+79189861084"),
+    )
+
+    assert updated.email == "user@example.com"
+    assert updated.phone == "+79189861084"
+    assert updated.hashed_password == old_hash
