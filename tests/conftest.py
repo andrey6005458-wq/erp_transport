@@ -10,9 +10,11 @@
 а тесты независимы друг от друга.
 """
 
+import itertools
 import os
 from collections.abc import AsyncGenerator
 from pathlib import Path
+from decimal import Decimal
 
 import pytest_asyncio
 from dotenv import load_dotenv
@@ -23,6 +25,10 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+
+from app.crud.vehicle import create_vehicle
+from app.schemas.vehicle import VehicleCreate
+
 
 # .env.test читаем ДО импорта app.* — иначе Settings создастся
 # с dev-настройками из .env, и мы не сможем переопределить URL.
@@ -142,3 +148,30 @@ async def client(db_session) -> AsyncGenerator[AsyncClient]:
         yield ac
 
     app.dependency_overrides.clear()
+
+
+# --- Фабрика Vehicle для тестов ---
+
+_vehicle_counter = itertools.count(1)
+
+
+@pytest_asyncio.fixture
+async def make_vehicle(db_session):
+    """Фабрика техники для тестов."""
+    async def _make(**overrides):
+        n = next(_vehicle_counter)
+        data = {"plate_number": f"ТЕСТ{n:04d}",
+            "vin": f"VIN{n:014d}",
+            "brand": "Mercedes",
+            "model": "Arocs",
+            "year": 2023,
+            "vehicle_type": "dump_truck",
+            "capacity_kg": 30000,
+            "volume_m3": Decimal("20.00"),
+        }
+        data.update(overrides)
+        return await create_vehicle(db_session, VehicleCreate(**data))
+    return _make
+
+
+
