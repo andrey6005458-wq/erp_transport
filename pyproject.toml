@@ -3,7 +3,7 @@ name = "erp-transport"
 version = "0.1.0"
 description = "ERP для автоматизации перевозок"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.20.0",
     "fastapi[standard]>=0.141.1",
@@ -11,7 +11,7 @@ dependencies = [
     "pwdlib[argon2]>=0.3.1",
     "pydantic-settings>=2.15.0",
     "python-dotenv>=1.2.3",
-    "sqlalchemy[asyncio]>=2.1.1",
+    "sqlalchemy[asyncio]==2.0.36",
     "uvicorn[standard]>=0.54.0",
 ]
 
@@ -39,3 +39,7 @@ ignore = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.ruff.lint.per-file-ignores]
+"app/models/driver.py" = ["UP037"]
+"app/models/driver_absence.py" = ["UP037"]
