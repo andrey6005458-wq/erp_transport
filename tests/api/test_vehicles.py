@@ -52,6 +52,25 @@ async def test_create_vehicle_normalizes_plate_via_api(
     assert response.json()["plate_number"] == "О957АУ"
 
 
+async def test_create_vehicle_normalizes_vin_via_api(
+    client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    """VIN через API нормализуется в верхний регистр."""
+    payload = {
+        "plate_number": "О957АУ",
+        "vin": "z9m96423150473830",
+        "brand": "Mercedes",
+        "model": "Arocs",
+        "year": 2023,
+        "vehicle_type": "dump_truck",
+    }
+    response = await client.post("/api/v1/vehicles/", json=payload)
+
+    assert response.status_code == 201
+    assert response.json()["vin"] == "Z9M96423150473830"
+
+
 async def test_create_vehicle_duplicate_plate_returns_409(
     client: AsyncClient,
     make_vehicle,

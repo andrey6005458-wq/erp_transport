@@ -1,13 +1,9 @@
 from decimal import Decimal
-from re import A
-from turtle import up, update
 
-from dotenv.parser import Original
 import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.crud import vehicle
 from app.crud.vehicle import (
     create_vehicle,
     get_vehicle_by_id,
@@ -60,6 +56,23 @@ async def test_create_vehicle_normalizes_plate(db_session: AsyncSession) -> None
     assert vehicle.plate_number == "О957АУ"
 
 
+async def test_create_vehicle_normalizes_vin(db_session: AsyncSession) -> None:
+    """VIN приводится к верхнему регистру."""
+    vehicle = await create_vehicle(
+        db_session,
+        VehicleCreate(
+            plate_number="О957АУ",
+            vin="z9m96423150473830",
+            brand="Mercedes",
+            model="Arocs",
+            year=2023,
+            vehicle_type="dump_truck",
+        ),
+    )
+
+    assert vehicle.vin == "Z9M96423150473830"
+
+
 async def test_create_vehicle_duplicate_plate(db_session: AsyncSession) -> None:
     """Дубликат plate_number -> IntegrityError."""
     payload = {
@@ -82,7 +95,7 @@ async def test_create_vehicle_duplicate_plate(db_session: AsyncSession) -> None:
     await db_session.rollback()
 
 
-async def  test_create_vehicle_duplicate_vin(db_session: AsyncSession) -> None:
+async def test_create_vehicle_duplicate_vin(db_session: AsyncSession) -> None:
     """Дубликат vin -> IntegrityError."""
     payload = {
         "plate_number": "О957АУ",
@@ -160,7 +173,7 @@ async def test_list_vehicles_pagination(db_session: AsyncSession, make_vehicle) 
 
 
 async def test_list_vehicles_filter_by_status(
-        db_session: AsyncSession, make_vehicle
+    db_session: AsyncSession, make_vehicle
 ) -> None:
     """Фильтр по status работает."""
     await make_vehicle(status="active")
@@ -175,21 +188,17 @@ async def test_list_vehicles_filter_by_status(
     assert all(v.status == "active" for v in active_only)
 
 
-async def test_update_vehicle_brand(
-        db_session: AsyncSession, make_vehicle
-) -> None:
+async def test_update_vehicle_brand(db_session: AsyncSession, make_vehicle) -> None:
     """Обновление одной колонки."""
     vehicle = await make_vehicle(brand="Mercedes")
 
-    updated = await update_vehicle(
-        db_session, vehicle, VehicleUpdate(brand="Volvo")
-    )
+    updated = await update_vehicle(db_session, vehicle, VehicleUpdate(brand="Volvo"))
 
     assert updated.brand == "Volvo"
 
 
 async def test_update_vehicle_plate_normalized(
-        db_session: AsyncSession, make_vehicle
+    db_session: AsyncSession, make_vehicle
 ) -> None:
     """plate_number при update тоже нормализуется."""
     vehicle = await make_vehicle(plate_number="А001АА")
@@ -202,7 +211,7 @@ async def test_update_vehicle_plate_normalized(
 
 
 async def test_update_vehicle_multiple_fields(
-        db_session: AsyncSession, make_vehicle
+    db_session: AsyncSession, make_vehicle
 ) -> None:
     """Обновление нескольких полей сразу."""
     vehicle = await make_vehicle()
@@ -235,29 +244,21 @@ async def test_update_vehicle_empty_patch(
 
 
 async def test_update_vehicle_notes_null(
-        db_session: AsyncSession, make_vehicle
+    db_session: AsyncSession, make_vehicle
 ) -> None:
     """Явная передача notes=None стирает поле."""
     vehicle = await make_vehicle(notes="важная заметка")
     assert vehicle.notes == "важная заметка"
 
-    updated = await update_vehicle(
-        db_session, vehicle, VehicleUpdate(notes=None)
-    )
+    updated = await update_vehicle(db_session, vehicle, VehicleUpdate(notes=None))
 
     assert updated.notes is None
 
 
-async def test_update_vehicle_status(
-        db_session: AsyncSession, make_vehicle
-) -> None:
+async def test_update_vehicle_status(db_session: AsyncSession, make_vehicle) -> None:
     """Обновление статуса."""
     vehicle = await make_vehicle(status="active")
 
-    updated = await update_vehicle(
-        db_session, vehicle, VehicleUpdate(status="repair")
-    )
+    updated = await update_vehicle(db_session, vehicle, VehicleUpdate(status="repair"))
 
     assert updated.status == "repair"
-
-
