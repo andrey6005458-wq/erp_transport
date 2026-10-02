@@ -1,6 +1,3 @@
-from pydoc import plain
-from urllib import response
-
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,8 +33,8 @@ async def test_create_vehicle_returns_201(
 
 
 async def test_create_vehicle_normalizes_plate_via_api(
-        client: AsyncSession,
-        db_session: AsyncSession,
+    client: AsyncSession,
+    db_session: AsyncSession,
 ) -> None:
     """plate_number с пробелами и нижним регистром нормализуется."""
     payload = {
@@ -56,8 +53,8 @@ async def test_create_vehicle_normalizes_plate_via_api(
 
 
 async def test_create_vehicle_duplicate_plate_returns_409(
-        client: AsyncClient,
-        make_vehicle,
+    client: AsyncClient,
+    make_vehicle,
 ) -> None:
     """Дубликат plate_number -> 409 с сообщением про госномер."""
     await make_vehicle(plate_number="О957АУ", vin="XTA1234567890ABCD")
@@ -100,8 +97,8 @@ async def test_create_vehicle_duplicate_vin_returns_409(
 
 
 async def test_create_vehicle_invalid_vin_length_returns_422(
-        client:AsyncClient,
-        db_session: AsyncSession,
+    client: AsyncClient,
+    db_session: AsyncSession,
 ) -> None:
     """VIN короче 17 символов -> 422 от Pydantic."""
     payload = {
@@ -119,8 +116,8 @@ async def test_create_vehicle_invalid_vin_length_returns_422(
 
 
 async def test_create_vehicle_invalid_year_returns_422(
-        client: AsyncClient,
-        db_session: AsyncSession,
+    client: AsyncClient,
+    db_session: AsyncSession,
 ) -> None:
     """Год < 2010 -> 422 от Pydantic."""
     payload = {
@@ -138,8 +135,8 @@ async def test_create_vehicle_invalid_year_returns_422(
 
 
 async def test_create_vehicle_invalid_type_returns_422(
-        client: AsyncClient,
-        db_session: AsyncSession,
+    client: AsyncClient,
+    db_session: AsyncSession,
 ) -> None:
     """Неизвестный vehicle_type -> 422."""
     payload = {
@@ -156,8 +153,8 @@ async def test_create_vehicle_invalid_type_returns_422(
 
 
 async def test_get_vehicle_by_id_returns_200(
-        client: AsyncClient,
-        make_vehicle,
+    client: AsyncClient,
+    make_vehicle,
 ) -> None:
     """GET по id возвращает технику."""
     vehicle = await make_vehicle(plate_number="О957АУ")
@@ -182,8 +179,8 @@ async def test_get_vehicle_by_id_not_found_returns_404(
 
 
 async def test_list_vehicles_returns_200_empty(
-        client: AsyncClient,
-        db_session: AsyncSession,
+    client: AsyncClient,
+    db_session: AsyncSession,
 ) -> None:
     """Пустая БД -> пустой список."""
     response = await client.get("/api/v1/vehicles/")
@@ -209,8 +206,8 @@ async def test_list_vehicles_returns_200(
 
 
 async def test_list_vehicles_filter_by_status(
-        client: AsyncClient,
-        make_vehicle,
+    client: AsyncClient,
+    make_vehicle,
 ) -> None:
     """?status=repair возвращает только технику в ремонте."""
     await make_vehicle(status="active")
@@ -241,3 +238,19 @@ async def test_list_vehicles_pagination(
     assert len(data) == 1
     assert data[0]["id"] == v2.id
     assert v1.id != v2.id
+
+
+async def test_get_vehicle_by_id_too_large_returns_422(
+    client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    """id больше int4 (2^31-1) → 422, не 500.
+
+    Postgres INTEGER не принимает значения > 2_147_483_647.
+    Без валидации FastAPI прокидывает огромное число в SQL,
+    Postgres падает с DataError → 500. Должно быть 422.
+    """
+    too_large = 9_999_999_999_999_999_999
+    response = await client.get(f"/api/v1/vehicles/{too_large}")
+
+    assert response.status_code == 422

@@ -191,3 +191,17 @@ async def test_list_users_pagination(
     data = response.json()
     assert len(data) == 1
     assert data[0]["id"] == users[1].id
+
+
+async def test_get_user_by_id_too_large_returns_422(
+    client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    """id больше int4 (2^31-1) → 422, не 500.
+
+    Симметрично vehicles-тесту. Защита на границе int4.
+    """
+    too_large = 9_999_999_999_999_999_999
+    response = await client.get(f"/api/v1/users/{too_large}")
+
+    assert response.status_code == 422
