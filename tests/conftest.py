@@ -13,8 +13,8 @@
 import itertools
 import os
 from collections.abc import AsyncGenerator
-from pathlib import Path
 from decimal import Decimal
+from pathlib import Path
 
 import pytest_asyncio
 from dotenv import load_dotenv
@@ -28,7 +28,6 @@ from sqlalchemy.ext.asyncio import (
 
 from app.crud.vehicle import create_vehicle
 from app.schemas.vehicle import VehicleCreate
-
 
 # .env.test читаем ДО импорта app.* — иначе Settings создастся
 # с dev-настройками из .env, и мы не сможем переопределить URL.
@@ -158,9 +157,11 @@ _vehicle_counter = itertools.count(1)
 @pytest_asyncio.fixture
 async def make_vehicle(db_session):
     """Фабрика техники для тестов."""
+
     async def _make(**overrides):
         n = next(_vehicle_counter)
-        data = {"plate_number": f"ТЕСТ{n:04d}",
+        data = {
+            "plate_number": f"ТЕСТ{n:04d}",
             "vin": f"VIN{n:014d}",
             "brand": "Mercedes",
             "model": "Arocs",
@@ -171,7 +172,5 @@ async def make_vehicle(db_session):
         }
         data.update(overrides)
         return await create_vehicle(db_session, VehicleCreate(**data))
+
     return _make
-
-
-
