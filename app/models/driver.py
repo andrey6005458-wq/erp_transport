@@ -59,7 +59,7 @@ class Driver(Base):
         nullable=True,
         comment="Свободные заметки.",
     )
-    сreated_at: Mapped[datetime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
