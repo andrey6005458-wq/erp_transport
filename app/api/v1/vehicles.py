@@ -17,12 +17,14 @@ router = APIRouter(prefix="/vehicles", tags=["vehicles"])
 
 
 def _parse_unique_violation(err: IntegrityError) -> str:
-    """Определяет, какой unique constraint нарушен."""
-    error_text = str(err.orig)
+    """Определяет, какой unique constraint нарушен.
+    Возвращает человекочитаемое сообщение для 409.
+    """
+    error_text = str(err.orig).lower()
 
-    if "ix_vehicles_plate_number" in error_text:
+    if "plate_number" in error_text:
         return "Машина с таким госномером уже существует"
-    if "vehicle_vin_key" in error_text:
+    if "vin" in error_text:
         return "Машина с таким VIN уже существует"
     return "Конфликт уникальности данных"
 
