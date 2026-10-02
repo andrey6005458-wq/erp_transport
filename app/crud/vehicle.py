@@ -10,10 +10,16 @@ def _normalize_plate(plate: str) -> str:
     return plate.strip().upper()
 
 
+def _normalize_vin(vin: str) -> str:
+    """Приводит VIN к единому виду: strip + upper."""
+    return vin.strip().upper()
+
+
 async def create_vehicle(db: AsyncSession, vehicle_in: VehicleCreate) -> Vehicle:
     """Создает единицу техники."""
     data = vehicle_in.model_dump()
     data["plate_number"] = _normalize_plate(data["plate_number"])
+    data["vin"] = _normalize_vin(data["vin"])
     vehicle = Vehicle(**data)
     db.add(vehicle)
     await db.commit()
@@ -57,6 +63,9 @@ async def update_vehicle(
 
     if update_data.get("plate_number") is not None:
         update_data["plate_number"] = _normalize_plate(update_data["plate_number"])
+
+    if update_data.get("vin") is not None:
+        update_data["vin"] = _normalize_vin(update_data["vin"])
 
     for field, value in update_data.items():
         setattr(vehicle, field, value)
