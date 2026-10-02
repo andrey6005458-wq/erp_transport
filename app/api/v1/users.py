@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud.user import create_user, get_user_by_id, list_users
 from app.database.session import session_getter
 from app.models.user import User
+from app.schemas.common import RecordId
 from app.schemas.user import UserCreate, UserRead
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -48,7 +49,7 @@ async def list_users_endpoint(
 
 @router.get("/{user_id}", response_model=UserRead)
 async def get_user_endpoint(
-    user_id: int,
+    user_id: RecordId,
     db: Annotated[AsyncSession, Depends(session_getter)],
 ) -> User:
     """Возвращает пользователя по id. 404 если не найден.

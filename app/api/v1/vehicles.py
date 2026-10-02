@@ -11,6 +11,7 @@ from app.crud.vehicle import (
 )
 from app.database.session import session_getter
 from app.models.vehicle import Vehicle
+from app.schemas.common import RecordId
 from app.schemas.vehicle import VehicleCreate, VehicleRead, VehicleStatus
 
 router = APIRouter(prefix="/vehicles", tags=["vehicles"])
@@ -59,7 +60,7 @@ async def list_vehicles_endpoint(
 
 @router.get("/{vehicle_id}", response_model=VehicleRead)
 async def get_vehicle_endpoint(
-    vehicle_id: int,
+    vehicle_id: RecordId,
     db: Annotated[AsyncSession, Depends(session_getter)],
 ) -> Vehicle:
     """Возвращает технику по id. Если не найдена - 404."""
