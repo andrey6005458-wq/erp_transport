@@ -38,7 +38,7 @@ class VehicleBase(BaseModel):
                 "vehicle_type": "dump_truck",
                 "capacity_kg": 30000,
                 "volume_m3": "20.00",
-                "notes": "Работает на ЮБК",
+                "notes": "Свободные заметки",
             },
         },
     )
@@ -59,7 +59,14 @@ class VehicleBase(BaseModel):
     model: str = Field(min_length=1, max_length=50, examples=["Arocs"])
     year: int = Field(ge=2010, le=2150, description="Год выпуска.", examples=[2023])
     vehicle_type: VehicleType = Field(
-        description="Тип техники.",
+        description=(
+            "Тип техники. Возможные значения:\n"
+            "- `dump_truck` — Самосвал\n"
+            "- `manipulator` — Манипулятор бортовой\n"
+            "- `excavator` — Экскаватор\n"
+            "- `dropside` — Бортовой автомобиль\n"
+            "- `other` — Другое"
+        ),
         examples=["dump_truck"],
     )
     capacity_kg: int | None = Field(
@@ -78,21 +85,36 @@ class VehicleBase(BaseModel):
         default=None,
         max_length=2000,
         description="Свободные заметки.",
-        examples=["Работает на ЮБК"],
     )
 
 
 class VehicleCreate(VehicleBase):
     """Тело POST /api/v1/vehicles/."""
 
-    status: VehicleStatus = "active"
+    status: VehicleStatus = Field(
+        default="active",
+        description=(
+            "Статус техники. Возможные значения:\n"
+            "- `active` — Работает\n"
+            "- `repair` — В ремонте\n"
+            "- `sold` — Продана"
+        ),
+        examples=["active"],
+    )
 
 
 class VehicleRead(VehicleBase):
     """Тело ответа API. Добавляет id, status, timestamps."""
 
-    id: int = Field(examples=[1])
-    status: VehicleStatus
+    id: int
+    status: VehicleStatus = Field(
+        description=(
+            "Статус техники:\n"
+            "- `active` — Работает\n"
+            "- `repair` — В ремонте\n"
+            "- `sold` — Продана"
+        ),
+    )
     created_at: datetime
     updated_at: datetime
 
