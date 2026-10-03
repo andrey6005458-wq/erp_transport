@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.driver import Driver
 from app.schemas.driver import DriverCreate, DriverUpdate
+from app.utils.phone import normalize_phone
 
 
 async def create_driver(db: AsyncSession, driver_in: DriverCreate) -> Driver:
@@ -20,8 +21,8 @@ async def get_driver_by_id(db: AsyncSession, driver_id: int) -> Driver | None:
 
 
 async def get_driver_by_phone(db: AsyncSession, phone: str) -> Driver | None:
-    """Возвращает водителя по телефону."""
-    stmt = select(Driver).where(Driver.phone == phone)
+    """Возвращает водителя по телефону (с нормализацией)."""
+    stmt = select(Driver).where(Driver.phone == normalize_phone(phone))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 

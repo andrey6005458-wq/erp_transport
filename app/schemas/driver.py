@@ -6,9 +6,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-# Регулярка для телефона: допускаем +7/8, пробелы, скобки, дефисы.
-# После нормализации в CRUD получаем +7XXXXXXXXXX.
-_PHONE_CLEAN = re.compile(r"[\s\-()]")
+from app.utils.phone import normalize_phone
+
 _PHONE_VALID = re.compile(r"^(\+7|8)\d{10}$")
 
 
@@ -47,15 +46,13 @@ class DriverBase(BaseModel):
     @field_validator("phone")
     @classmethod
     def validate_phone(cls, value: str) -> str:
-        """Проверить телефон, привести к формату +7XXXXXXXXXX."""
-        cleaned = _PHONE_CLEAN.sub("", value)
+        """Проверить телефон, привести к +7XXXXXXXXXX."""
+        cleaned = normalize_phone(value)
         if not _PHONE_VALID.match(cleaned):
             raise ValueError(
                 "Телефон должен быть в формате +7XXXXXXXXXX или 8XXXXXXXXXX "
                 "(допускаются пробелы, скобки, дефисы)."
             )
-        if cleaned.startswith("8"):
-            cleaned = "+7" + cleaned[1:]
         return cleaned
 
 
@@ -120,12 +117,10 @@ class DriverUpdate(BaseModel):
         """Проверить телефон, если он передан."""
         if value is None:
             return value
-        cleaned = _PHONE_CLEAN.sub("", value)
+        cleaned = normalize_phone(value)
         if not _PHONE_VALID.match(cleaned):
             raise ValueError(
                 "Телефон должен быть в формате +7XXXXXXXXXX или 8XXXXXXXXXX "
                 "(допускаются пробелы, скобки, дефисы)."
             )
-        if cleaned.startswith("8"):
-            cleaned = "+7" + cleaned[1:]
         return cleaned
