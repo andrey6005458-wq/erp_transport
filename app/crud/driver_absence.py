@@ -117,3 +117,43 @@ async def delete_absence(db: AsyncSession, absence: DriverAbsence) -> None:
     """Удалить отсутствие."""
     await db.delete(absence)
     await db.commit()
+
+
+async def list_current_absences(db: AsyncSession) -> list[DriverAbsence]:
+    """Возвращает все отсутствия, активные на текущую дату."""
+    today = date.today()
+    stmt = (
+        select(DriverAbsence)
+        .where(
+            DriverAbsence.date_from <= today,
+            or_(
+                DriverAbsence.date_to.is_(None),
+                DriverAbsence.date_to >= today,
+            ),
+        )
+        .order_by(DriverAbsence.date_from.desc())
+    )
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def get_current_absence_by_driver(
+    db: AsyncSession,
+    driver_id: int,
+) -> DriverAbsence | None:
+    """Возвращает текущее отсутствие водителя (если есть)."""
+    today = date.today()
+    stmt = (
+        select(DriverAbsence)
+        .where(
+            DriverAbsence.driver_id == driver_id,
+            DriverAbsence.date_from <= today,
+            or_(
+                DriverAbsence.date_to.is_(None),
+                DriverAbsence.date_to >= today,
+            ),
+        )
+        .limit(1)
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()

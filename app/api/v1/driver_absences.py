@@ -8,6 +8,7 @@ from app.crud.driver_absence import (
     create_absence,
     delete_absence,
     get_absence_by_id,
+    get_current_absence_by_driver,
     list_absences_by_driver,
     update_absence,
 )
@@ -64,6 +65,22 @@ async def list_absences_endpoint(
     return await list_absences_by_driver(
         db, driver_id, skip=skip, limit=limit, absence_type=absence_type
     )
+
+
+@router.get("/current", response_model=DriverAbsenceRead)
+async def get_current_absence_endpoint(
+    driver_id: RecordId,
+    db: Annotated[AsyncSession, Depends(session_getter)],
+) -> DriverAbsence:
+    """Текущее отсутствие водителя (если есть)."""
+    await _ensure_driver_exists(db, driver_id)
+    absence = await get_current_absence_by_driver(db, driver_id)
+    if absence is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"У водителя {driver_id} нет текущего отсутствия",
+        )
+    return absence
 
 
 @router.get("/{absence_id}", response_model=DriverAbsenceRead)
