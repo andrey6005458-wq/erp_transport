@@ -28,7 +28,7 @@ async def create_vehicle(db: AsyncSession, vehicle_in: VehicleCreate) -> Vehicle
 
 
 async def get_vehicle_by_id(db: AsyncSession, vehicle_id: int) -> Vehicle | None:
-    """Возвращает технику по primary kay."""
+    """Возвращает технику по primary key."""
     return await db.get(Vehicle, vehicle_id)
 
 
