@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.driver import get_driver_by_id
@@ -55,12 +55,15 @@ async def create_absence_endpoint(
 async def list_absences_endpoint(
     driver_id: RecordId,
     db: Annotated[AsyncSession, Depends(session_getter)],
+    absence_type: Annotated[str | None, Query()] = None,
     skip: int = 0,
     limit: int = 100,
 ) -> list[DriverAbsence]:
-    """Список отсутствий водителя."""
+    """Список отсутствий водителя c фильтром по типу."""
     await _ensure_driver_exists(db, driver_id)
-    return await list_absences_by_driver(db, driver_id, skip=skip, limit=limit)
+    return await list_absences_by_driver(
+        db, driver_id, skip=skip, limit=limit, absence_type=absence_type
+    )
 
 
 @router.get("/{absence_id}", response_model=DriverAbsenceRead)

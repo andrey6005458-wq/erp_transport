@@ -64,8 +64,9 @@ async def list_absences_by_driver(
     driver_id: int,
     skip: int = 0,
     limit: int = 100,
+    absence_type: str | None = None,
 ) -> list[DriverAbsence]:
-    """Возвращает страницу отсутствий водителя, отсортированную по дате начала."""
+    """Возвращает страницу отсутствий водителя с фильтром по типу."""
     stmt = (
         select(DriverAbsence)
         .where(DriverAbsence.driver_id == driver_id)
@@ -73,6 +74,8 @@ async def list_absences_by_driver(
         .offset(skip)
         .limit(limit)
     )
+    if absence_type is not None:
+        stmt = stmt.where(DriverAbsence.absence_type == absence_type)
     result = await db.execute(stmt)
     return list(result.scalars().all())
 
