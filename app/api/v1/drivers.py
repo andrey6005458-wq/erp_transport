@@ -14,6 +14,7 @@ from app.crud.driver import (
 from app.crud.driver_absence import list_current_absences
 from app.database.session import session_getter
 from app.models.driver import Driver
+from app.models.driver_absence import DriverAbsence
 from app.schemas.common import RecordId
 from app.schemas.driver import DriverCreate, DriverRead, DriverUpdate
 from app.schemas.driver_absence import DriverAbsenceRead
@@ -78,7 +79,7 @@ async def get_driver_by_phone_endpoint(
 @router.get("/current-absences", response_model=list[DriverAbsenceRead])
 async def list_current_absences_endpoint(
     db: Annotated[AsyncSession, Depends(session_getter)],
-) -> list[DriverAbsenceRead]:
+) -> list[DriverAbsence]:
     """Список всех отсутствий, активных на текущую дату."""
     return await list_current_absences(db)
 
