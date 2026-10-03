@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud.driver import (
     create_driver,
     get_driver_by_id,
+    get_driver_by_phone,
     list_drivers,
     update_driver,
 )
@@ -55,6 +56,21 @@ async def list_drivers_endpoint(
     return await list_drivers(
         db, skip=skip, limit=limit, status=status_filter, search=search
     )
+
+
+@router.get("/phone/{phone}", response_model=DriverRead)
+async def get_driver_by_phone_endpoint(
+    phone: str,
+    db: Annotated[AsyncSession, Depends(session_getter)],
+) -> Driver:
+    """Найти водителя по телефону (для Telegram-бота)."""
+    driver = await get_driver_by_phone(db, phone)
+    if driver is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Водитель с телефоном {phone} не найден",
+        )
+    return driver
 
 
 @router.get("/{driver_id}", response_model=DriverRead)
