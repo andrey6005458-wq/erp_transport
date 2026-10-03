@@ -157,3 +157,56 @@ async def get_current_absence_by_driver(
     )
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
+
+
+async def list_absences_on_date(
+    db: AsyncSession,
+    target_date: date,
+    driver_id: int | None = None,
+    absence_type: str | None = None,
+) -> list[DriverAbsence]:
+    """Отсутствия, активные на указанную дату."""
+    stmt = (
+        select(DriverAbsence)
+        .where(
+            DriverAbsence.date_from <= target_date,
+            or_(
+                DriverAbsence.date_to.is_(None),
+                DriverAbsence.date_to >= target_date,
+            ),
+        )
+        .order_by(DriverAbsence.driver_id, DriverAbsence.date_from.desc())
+    )
+    if driver_id is not None:
+        stmt = stmt.where(DriverAbsence.driver_id == driver_id)
+    if absence_type is not None:
+        stmt = stmt.where(DriverAbsence.absence_type == absence_type)
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def list_absences_in_period(
+    db: AsyncSession,
+    period_from: date,
+    period_to: date,
+    driver_id: int | None = None,
+    absence_type: str | None = None,
+) -> list[DriverAbsence]:
+    """Отсутствия, пересекающиеся с указанным периодом."""
+    stmt = (
+        select(DriverAbsence)
+        .where(
+            DriverAbsence.date_from <= period_to,
+            or_(
+                DriverAbsence.date_to.is_(None),
+                DriverAbsence.date_to >= period_from,
+            ),
+        )
+        .order_by(DriverAbsence.date_from.desc())
+    )
+    if driver_id is not None:
+        stmt = stmt.where(DriverAbsence.driver_id == driver_id)
+    if absence_type is not None:
+        stmt = stmt.where(DriverAbsence.absence_type == absence_type)
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
