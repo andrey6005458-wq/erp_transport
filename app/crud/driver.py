@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.driver import Driver
@@ -31,8 +31,9 @@ async def list_drivers(
     skip: int = 0,
     limit: int = 100,
     status: str | None = None,
+    search: str | None = None,
 ) -> list[Driver]:
-    """Возвращает страницу водителей, отсортированную по фамилии и имени."""
+    """Возвращает страницу водителей с фильтрами по статусу и поиску."""
     stmt = (
         select(Driver)
         .order_by(Driver.last_name, Driver.first_name)
@@ -41,6 +42,15 @@ async def list_drivers(
     )
     if status is not None:
         stmt = stmt.where(Driver.status == status)
+    if search is not None:
+        pattern = f"%{search}%"
+        stmt = stmt.where(
+            or_(
+                Driver.last_name.ilike(pattern),
+                Driver.first_name.ilike(pattern),
+                Driver.middle_name.ilike(pattern),
+            )
+        )
     result = await db.execute(stmt)
     return list(result.scalars().all())
 

@@ -47,11 +47,14 @@ async def create_driver_endpoint(
 async def list_drivers_endpoint(
     db: Annotated[AsyncSession, Depends(session_getter)],
     status_filter: Annotated[str | None, Query(alias="status")] = None,
+    search: Annotated[str | None, Query(max_length=100)] = None,
     skip: int = 0,
     limit: int = 100,
 ) -> list[Driver]:
-    """Список водителей с фильтром по статусу."""
-    return await list_drivers(db, skip=skip, limit=limit, status=status_filter)
+    """Список водителей с фильтром по статусу и поиском по ФИО."""
+    return await list_drivers(
+        db, skip=skip, limit=limit, status=status_filter, search=search
+    )
 
 
 @router.get("/{driver_id}", response_model=DriverRead)
