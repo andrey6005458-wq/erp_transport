@@ -30,7 +30,7 @@ async def _ensure_driver_exists(db: AsyncSession, driver_id: int) -> None:
     if driver is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Водитеть с id={driver_id} не найден.",
+            detail=f"Водитель с id={driver_id} не найден",
         )
 
 
@@ -106,7 +106,7 @@ async def update_absence_endpoint(
     absence_in: DriverAbsenceUpdate,
     db: Annotated[AsyncSession, Depends(session_getter)],
 ) -> DriverAbsence:
-    """Обновить отсутствие (PATCH сумантика)."""
+    """Обновить отсутствие (PATCH семантика)."""
     absence = await get_absence_by_id(db, absence_id)
     if absence is None or absence.driver_id != driver_id:
         raise HTTPException(
