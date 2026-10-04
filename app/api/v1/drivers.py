@@ -110,7 +110,7 @@ async def update_driver_endpoint(
     if driver is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Водитель с id{driver_id} не найден.",
+            detail=f"Водитель с id={driver_id} не найден.",
         )
     try:
         driver = await update_driver(db, driver, driver_in)
