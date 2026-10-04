@@ -13,6 +13,7 @@
 import itertools
 import os
 from collections.abc import AsyncGenerator
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
@@ -27,6 +28,7 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from app.crud.vehicle import create_vehicle
+from app.models.driver import Driver
 from app.schemas.vehicle import VehicleCreate
 
 # .env.test читаем ДО импорта app.* — иначе Settings создастся
@@ -36,8 +38,12 @@ load_dotenv(_PROJECT_ROOT / ".env.test", override=True)
 
 
 # --- Импорты приложения — после .env.test ---
+from app.crud.driver import create_driver, update_driver  # noqa: E402
+from app.crud.driver_absence import create_absence  # noqa: E402
 from app.database.session import session_getter  # noqa: E402
 from app.main import app  # noqa: E402
+from app.schemas.driver import DriverCreate, DriverUpdate  # noqa: E402
+from app.schemas.driver_absence import DriverAbsenceCreate  # noqa: E402
 
 
 def _build_test_database_url() -> str:
@@ -172,5 +178,74 @@ async def make_vehicle(db_session):
         }
         data.update(overrides)
         return await create_vehicle(db_session, VehicleCreate(**data))
+
+    return _make
+
+
+_driver_counter = itertools.count(1)
+_absence_counter = itertools.count(1)
+
+
+async def _create_driver_helper(db_session: AsyncSession) -> "Driver":
+    """Внутренний хелпер — создать тестового водителя с уникальным phone."""
+    n = next(_driver_counter)
+    return await create_driver(
+        db_session,
+        DriverCreate(
+            last_name=f"Фамилия{n}",
+            first_name=f"Имя{n}",
+            middle_name=f"Отчество{n}",
+            phone=f"+7978{n:07d}",
+        ),
+    )
+
+
+@pytest_asyncio.fixture
+async def make_driver(db_session):
+    """Фабрика водителей для тестов."""
+
+    async def _make(**overrides):
+        status_value = overrides.pop("status", None)
+        n = next(_driver_counter)
+        data = {
+            "last_name": f"Фамилия{n}",
+            "first_name": f"Имя{n}",
+            "middle_name": f"Отчество{n}",
+            "phone": f"+7900{n:07d}",
+        }
+        data.update(overrides)
+        driver = await create_driver(db_session, DriverCreate(**data))
+        if status_value is not None:
+            driver = await update_driver(
+                db_session, driver, DriverUpdate(status=status_value)
+            )
+        return driver
+
+    return _make
+
+
+@pytest_asyncio.fixture
+async def make_absence(db_session):
+    """Фабрика отсутствий для тестов.
+
+    Если driver не передан — создаёт нового водителя.
+    """
+
+    async def _make(driver=None, **overrides):
+        if driver is None:
+            driver = await _create_driver_helper(db_session)
+        n = next(_absence_counter)
+        data = {
+            "absence_type": "vacation",
+            "date_from": date(2026, 1, 1),
+            "date_to": date(2026, 1, 1 + n),
+            "reason": f"Отпуск {n}",
+        }
+        data.update(overrides)
+        return await create_absence(
+            db_session,
+            driver_id=driver.id,
+            absence_in=DriverAbsenceCreate(**data),
+        )
 
     return _make
