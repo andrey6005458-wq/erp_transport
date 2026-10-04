@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.schemas.driver import DriverShortRead
+
 AbsenceType = Literal["vacation", "sick_leave", "absenteeism", "other"]
 
 
@@ -59,6 +61,12 @@ class DriverAbsenceRead(DriverAbsenceBase):
             "example": {
                 "id": 1,
                 "driver_id": 1,
+                "driver": {
+                    "id": 1,
+                    "last_name": "Иванов",
+                    "first_name": "Иван",
+                    "middle_name": "Иванович",
+                },
                 "absence_type": "vacation",
                 "date_from": "2026-06-01",
                 "date_to": "2026-06-14",
@@ -71,6 +79,7 @@ class DriverAbsenceRead(DriverAbsenceBase):
 
     id: int = Field(description="Идентификатор.")
     driver_id: int = Field(description="ID водителя.")
+    driver: DriverShortRead = Field(description="Краткая информация о водителе.")
     created_at: datetime = Field(description="Дата создания.")
     updated_at: datetime = Field(description="Дата обновления.")
 

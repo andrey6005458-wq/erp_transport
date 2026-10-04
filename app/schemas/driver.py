@@ -124,3 +124,13 @@ class DriverUpdate(BaseModel):
                 "(допускаются пробелы, скобки, дефисы)."
             )
         return cleaned
+
+
+class DriverShortRead(BaseModel):
+    """Краткая информация о водителе для вложенных ответов."""
+
+    model_config = ConfigDict(from_attributes=True)
+    id: int = Field(description="Идентификатор.")
+    last_name: str = Field(description="Фамилия.")
+    first_name: str = Field(description="Имя.")
+    middle_name: str | None = Field(default=None, description="Отчество.")

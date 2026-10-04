@@ -2,6 +2,7 @@ from datetime import date
 
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.driver_absence import DriverAbsence
 from app.schemas.driver_absence import DriverAbsenceCreate, DriverAbsenceUpdate
@@ -51,12 +52,19 @@ async def create_absence(
     db.add(absence)
     await db.commit()
     await db.refresh(absence)
+    await db.refresh(absence, ["driver"])
     return absence
 
 
 async def get_absence_by_id(db: AsyncSession, absence_id: int) -> DriverAbsence | None:
     """Возвращает отсутствие по primary key."""
-    return await db.get(DriverAbsence, absence_id)
+    stmt = (
+        select(DriverAbsence)
+        .options(selectinload(DriverAbsence.driver))
+        .where(DriverAbsence.id == absence_id)
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def list_absences_by_driver(
@@ -69,6 +77,7 @@ async def list_absences_by_driver(
     """Возвращает страницу отсутствий водителя с фильтром по типу."""
     stmt = (
         select(DriverAbsence)
+        .options(selectinload(DriverAbsence.driver))
         .where(DriverAbsence.driver_id == driver_id)
         .order_by(DriverAbsence.date_from.desc())
         .offset(skip)
@@ -110,6 +119,7 @@ async def update_absence(
 
     await db.commit()
     await db.refresh(absence)
+    await db.refresh(absence, ["driver"])
     return absence
 
 
@@ -124,6 +134,7 @@ async def list_current_absences(db: AsyncSession) -> list[DriverAbsence]:
     today = date.today()
     stmt = (
         select(DriverAbsence)
+        .options(selectinload(DriverAbsence.driver))
         .where(
             DriverAbsence.date_from <= today,
             or_(
@@ -145,6 +156,7 @@ async def get_current_absence_by_driver(
     today = date.today()
     stmt = (
         select(DriverAbsence)
+        .options(selectinload(DriverAbsence.driver))
         .where(
             DriverAbsence.driver_id == driver_id,
             DriverAbsence.date_from <= today,
@@ -168,6 +180,7 @@ async def list_absences_on_date(
     """Отсутствия, активные на указанную дату."""
     stmt = (
         select(DriverAbsence)
+        .options(selectinload(DriverAbsence.driver))
         .where(
             DriverAbsence.date_from <= target_date,
             or_(
@@ -195,6 +208,7 @@ async def list_absences_in_period(
     """Отсутствия, пересекающиеся с указанным периодом."""
     stmt = (
         select(DriverAbsence)
+        .options(selectinload(DriverAbsence.driver))
         .where(
             DriverAbsence.date_from <= period_to,
             or_(
