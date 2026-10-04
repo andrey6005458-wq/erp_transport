@@ -26,7 +26,7 @@ dev = [
 
 [tool.ruff]
 line-length = 88
-target-version = "py314"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
@@ -36,12 +36,13 @@ ignore = [
     "RUF003",  # ambiguous unicode character in comment
 ]
 
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-testpaths = ["tests"]
-
 [tool.ruff.lint.per-file-ignores]
+"alembic/versions/*.py" = ["E501"]
 "app/models/driver.py" = ["UP037"]
 "app/models/driver_absence.py" = ["UP037"]
 "app/schemas/driver.py" = ["UP037"]
 "app/schemas/driver_absence.py" = ["UP037"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
