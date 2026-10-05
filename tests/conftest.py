@@ -13,7 +13,7 @@
 import itertools
 import os
 from collections.abc import AsyncGenerator
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -235,10 +235,11 @@ async def make_absence(db_session):
         if driver is None:
             driver = await _create_driver_helper(db_session)
         n = next(_absence_counter)
+        base = date(2026, 1, 1)
         data = {
             "absence_type": "vacation",
-            "date_from": date(2026, 1, 1),
-            "date_to": date(2026, 1, 1 + n),
+            "date_from": base,
+            "date_to": base + timedelta(days=3 + (n % 20)),
             "reason": f"Отпуск {n}",
         }
         data.update(overrides)
