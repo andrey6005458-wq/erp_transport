@@ -160,7 +160,7 @@ async def test_create_absence_adjacent_dates_ok(
     assert absence.id is not None
 
 
-async def test_create_ansence_other_driver_ok(
+async def test_create_absence_other_driver_ok(
     db_session: AsyncSession, make_driver
 ) -> None:
     """Отсутствия разных водителей не пересакаются."""
