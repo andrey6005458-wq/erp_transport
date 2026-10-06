@@ -37,7 +37,7 @@ class MaterialBase(BaseModel):
         )
     )
     unit: MaterialUnit = Field(
-        description="Единица измерения: ton, m3, piece, tilet, pallet, bag, roll."
+        description="Единица измерения: ton, m3, piece, liter, pallet, bag, roll."
     )
     is_bulk: bool = Field(
         default=False,
@@ -94,11 +94,11 @@ class MaterialRead(MaterialBase):
                 "material_type": "inert",
                 "unit": "ton",
                 "is_bulk": True,
-                "desity_km_m3": 1400,
+                "density_kg_m3": 1400,
                 "notes": "Гранитный, карьер Шархинский",
                 "status": "active",
-                "created_at": "2026-10-06T10:10:00+03:00",
-                "updated_at": "2026-10-06T10:00:00+03:00",
+                "created_at": "2026-10-06T10:00:00+03:00",
+                "updated_at": "2026-10-06T10:10:00+03:00",
             }
         },
     )
