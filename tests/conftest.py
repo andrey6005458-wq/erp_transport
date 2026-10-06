@@ -27,8 +27,10 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from app.crud.material import create_material, update_material
 from app.crud.vehicle import create_vehicle
 from app.models.driver import Driver
+from app.schemas.material import MaterialCreate, MaterialUpdate
 from app.schemas.vehicle import VehicleCreate
 
 # .env.test читаем ДО импорта app.* — иначе Settings создастся
@@ -248,5 +250,36 @@ async def make_absence(db_session):
             driver_id=driver.id,
             absence_in=DriverAbsenceCreate(**data),
         )
+
+    return _make
+
+
+_material_counter = itertools.count(1)
+
+
+@pytest_asyncio.fixture
+async def make_material(db_session):
+    """Фабрика материалов для тестов.
+
+    Поле status НЕ входит в MaterialCreate (создание всегда active),
+    поэтому если status передан явно — догоняем через update_material.
+    """
+
+    async def _make(**overrides):
+        status_value = overrides.pop("status", None)
+        n = next(_material_counter)
+        data = {
+            "name": f"Материал {n}",
+            "material_type": "inert",
+            "unit": "ton",
+            "is_bulk": True,
+        }
+        data.update(overrides)
+        material = await create_material(db_session, MaterialCreate(**data))
+        if status_value is not None:
+            material = await update_material(
+                db_session, material, MaterialUpdate(status=status_value)
+            )
+        return material
 
     return _make
