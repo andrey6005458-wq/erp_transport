@@ -151,13 +151,13 @@ async def test_list_absences_filter_by_type(
     driver = await make_driver()
     await make_absence(
         driver=driver,
-        absence_type="sick_leave",
+        absence_type="vacation",
         date_from=date(2026, 1, 1),
         date_to=date(2026, 1, 5),
     )
     await make_absence(
         driver=driver,
-        ansence_type="sick_leave",
+        absence_type="sick_leave",
         date_from=date(2026, 3, 1),
         date_to=date(2026, 3, 5),
     )
@@ -172,7 +172,7 @@ async def test_list_absences_filter_by_type(
     assert data[0]["absence_type"] == "vacation"
 
 
-async def test_list_abcences_driver_not_found_returns_404(
+async def test_list_absences_driver_not_found_returns_404(
     client: AsyncClient, db_session: AsyncSession
 ) -> None:
     """Несуществующий driver_id -> 404."""
@@ -181,7 +181,7 @@ async def test_list_abcences_driver_not_found_returns_404(
     assert response.status_code == 404
 
 
-async def test_get_current_absence_return_200(
+async def test_get_current_absence_returns_200(
     client: AsyncClient, make_driver, make_absence
 ) -> None:
     """Возвращает текущее отсутствие с driver."""
@@ -303,7 +303,7 @@ async def test_delete_absence_returns_204(
     assert check.status_code == 404
 
 
-async def test_deleteabsence_not_found_returns_404(
+async def test_delete_absence_not_found_returns_404(
     client: AsyncClient, make_driver
 ) -> None:
     """DELETE несуществующего -> 404."""
