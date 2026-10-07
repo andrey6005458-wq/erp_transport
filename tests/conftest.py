@@ -27,9 +27,11 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from app.crud.counterparty import create_counterparty, update_counterparty
 from app.crud.material import create_material, update_material
 from app.crud.vehicle import create_vehicle
 from app.models.driver import Driver
+from app.schemas.counterparty import CounterpartyCreate, CounterpartyUpdate
 from app.schemas.material import MaterialCreate, MaterialUpdate
 from app.schemas.vehicle import VehicleCreate
 
@@ -281,5 +283,36 @@ async def make_material(db_session):
                 db_session, material, MaterialUpdate(status=status_value)
             )
         return material
+
+    return _make
+
+
+_counterparty_counter = itertools.count(1)
+
+
+@pytest_asyncio.fixture
+async def make_counterparty(db_session):
+    """Фабрика контрагентов для тестов.
+
+    Поле status НЕ входит в CounterpartyCreate (создание всегда active),
+    поэтому если status передан явно — догоняем через update_counterparty.
+    """
+
+    async def _make(**overrides):
+        status_value = overrides.pop("status", None)
+        n = next(_counterparty_counter)
+        data = {
+            "name": f"Контрагент {n}",
+            "counterparty_type": "client",
+        }
+        data.update(overrides)
+        counterparty = await create_counterparty(db_session, CounterpartyCreate(**data))
+        if status_value is not None:
+            counterparty = await update_counterparty(
+                db_session,
+                counterparty,
+                CounterpartyUpdate(status=status_value),
+            )
+        return counterparty
 
     return _make
