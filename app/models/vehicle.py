@@ -76,6 +76,16 @@ class Vehicle(Base):
     notes: Mapped[str | None] = mapped_column(
         Text, nullable=True, comment="Свободные заметки."
     )
+    fuel_consumption_per_100km: Mapped[Decimal | None] = mapped_column(
+        Numeric(5, 2),
+        nullable=True,
+        comment="Расход л/100км. Для колёсной техники.",
+    )
+    fuel_consumption_per_hour: Mapped[Decimal | None] = mapped_column(
+        Numeric(5, 2),
+        nullable=True,
+        comment="Расход л/час. Для спецтехники.",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
