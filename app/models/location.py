@@ -57,12 +57,12 @@ class Location(Base):
         comment="Адрес (свободный текст).",
     )
     latitude: Mapped[Decimal | None] = mapped_column(
-        Numeric(10, 7),
+        Numeric(9, 6),
         nullable=True,
         comment="Широта. NULL — не задана.",
     )
     longitude: Mapped[Decimal | None] = mapped_column(
-        Numeric(10, 7),
+        Numeric(9, 6),
         nullable=True,
         comment="Долгота. NULL — не задана.",
     )

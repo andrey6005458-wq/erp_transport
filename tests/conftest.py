@@ -44,10 +44,12 @@ load_dotenv(_PROJECT_ROOT / ".env.test", override=True)
 # --- Импорты приложения — после .env.test ---
 from app.crud.driver import create_driver, update_driver  # noqa: E402
 from app.crud.driver_absence import create_absence  # noqa: E402
+from app.crud.location import create_location, update_location  # noqa: E402
 from app.database.session import session_getter  # noqa: E402
 from app.main import app  # noqa: E402
 from app.schemas.driver import DriverCreate, DriverUpdate  # noqa: E402
 from app.schemas.driver_absence import DriverAbsenceCreate  # noqa: E402
+from app.schemas.location import LocationCreate, LocationUpdate  # noqa: E402
 
 
 def _build_test_database_url() -> str:
@@ -314,5 +316,36 @@ async def make_counterparty(db_session):
                 CounterpartyUpdate(status=status_value),
             )
         return counterparty
+
+    return _make
+
+
+_location_counter = itertools.count(1)
+
+
+@pytest_asyncio.fixture
+async def make_location(db_session):
+    """Фабрика локаций для тестов.
+
+    Поле status НЕ входит в LocationCreate (создание всегда active),
+    поэтому если status передан явно — догоняем через update_location.
+    """
+
+    async def _make(**overrides):
+        status_value = overrides.pop("status", None)
+        n = next(_location_counter)
+        data = {
+            "name": f"Локация {n}",
+            "location_type": "quarry",
+        }
+        data.update(overrides)
+        location = await create_location(db_session, LocationCreate(**data))
+        if status_value is not None:
+            location = await update_location(
+                db_session,
+                location,
+                LocationUpdate(status=status_value),
+            )
+        return location
 
     return _make

@@ -1,8 +1,8 @@
 """add locations table
 
-Revision ID: 56f6c6428ed7
+Revision ID: 6fbfcbd102ed
 Revises: cf8013efbd1b
-Create Date: 2026-10-07 22:21:34.478042
+Create Date: 2026-10-08 13:01:04.141317
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "56f6c6428ed7"
+revision: str = "6fbfcbd102ed"
 down_revision: str | Sequence[str] | None = "cf8013efbd1b"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -45,13 +45,13 @@ def upgrade() -> None:
         ),
         sa.Column(
             "latitude",
-            sa.Numeric(precision=10, scale=7),
+            sa.Numeric(precision=9, scale=6),
             nullable=True,
             comment="Широта. NULL — не задана.",
         ),
         sa.Column(
             "longitude",
-            sa.Numeric(precision=10, scale=7),
+            sa.Numeric(precision=9, scale=6),
             nullable=True,
             comment="Долгота. NULL — не задана.",
         ),
