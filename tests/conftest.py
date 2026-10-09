@@ -45,11 +45,13 @@ load_dotenv(_PROJECT_ROOT / ".env.test", override=True)
 from app.crud.driver import create_driver, update_driver  # noqa: E402
 from app.crud.driver_absence import create_absence  # noqa: E402
 from app.crud.location import create_location, update_location  # noqa: E402
+from app.crud.mileage_record import create_mileage_record  # noqa: E402
 from app.database.session import session_getter  # noqa: E402
 from app.main import app  # noqa: E402
 from app.schemas.driver import DriverCreate, DriverUpdate  # noqa: E402
 from app.schemas.driver_absence import DriverAbsenceCreate  # noqa: E402
 from app.schemas.location import LocationCreate, LocationUpdate  # noqa: E402
+from app.schemas.mileage_record import MileageRecordCreate  # noqa: E402
 
 
 def _build_test_database_url() -> str:
@@ -347,5 +349,29 @@ async def make_location(db_session):
                 LocationUpdate(status=status_value),
             )
         return location
+
+    return _make
+
+
+_mileage_counter = itertools.count(1)
+
+
+@pytest_asyncio.fixture
+async def make_mileage_record(db_session):
+    """Фабрика записей одометра для тестов."""
+
+    async def _make(vehicle, **overrides):
+        n = next(_mileage_counter)
+        data = {
+            "record_date": date(2026, 1, 1 + (n % 27)),
+            "mileage_km": 100_000 + n * 1000,
+            "source": "manual",
+        }
+        data.update(overrides)
+        return await create_mileage_record(
+            db_session,
+            vehicle_id=vehicle.id,
+            record_in=MileageRecordCreate(**data),
+        )
 
     return _make

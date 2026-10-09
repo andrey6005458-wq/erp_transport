@@ -262,3 +262,38 @@ async def test_update_vehicle_status(db_session: AsyncSession, make_vehicle) -> 
     updated = await update_vehicle(db_session, vehicle, VehicleUpdate(status="repair"))
 
     assert updated.status == "repair"
+
+
+async def test_create_vehicle_with_fuel_consumption(
+    db_session: AsyncSession,
+) -> None:
+    """Создание с расходом топлива."""
+    vehicle = await create_vehicle(
+        db_session,
+        VehicleCreate(
+            plate_number="О957АУ",
+            vin="XTA1234567890ABCD",
+            brand="Mercedes",
+            model="Arocs",
+            year=2023,
+            vehicle_type="dump_truck",
+            fuel_consumption_per_100km=Decimal("35.50"),
+        ),
+    )
+    assert vehicle.fuel_consumption_per_100km == Decimal("35.50")
+    assert vehicle.fuel_consumption_per_hour is None
+
+
+async def test_update_vehicle_fuel_consumption(
+    db_session: AsyncSession, make_vehicle
+) -> None:
+    """Обновление расхода."""
+    vehicle = await make_vehicle(fuel_consumption_per_100km=None)
+
+    updated = await update_vehicle(
+        db_session,
+        vehicle,
+        VehicleUpdate(fuel_consumption_per_100km=Decimal("40.00")),
+    )
+
+    assert updated.fuel_consumption_per_100km == Decimal("40.00")

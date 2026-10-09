@@ -81,6 +81,16 @@ class VehicleBase(BaseModel):
         description="Объём кузова в м³.",
         examples=["20.00"],
     )
+    fuel_consumption_per_100km: Decimal | None = Field(
+        default=None,
+        ge=0,
+        description="Расход л/100км. Для колёсной техники.",
+    )
+    fuel_consumption_per_hour: Decimal | None = Field(
+        default=None,
+        ge=0,
+        description="Расход л/час. Для спецтехники.",
+    )
     notes: str | None = Field(
         default=None,
         max_length=2000,
@@ -143,4 +153,6 @@ class VehicleUpdate(BaseModel):
     capacity_kg: int | None = Field(default=None, gt=0)
     volume_m3: Decimal | None = Field(default=None, gt=0)
     status: VehicleStatus | None = None
+    fuel_consumption_per_100km: Decimal | None = Field(default=None, ge=0)
+    fuel_consumption_per_hour: Decimal | None = Field(default=None, ge=0)
     notes: str | None = Field(default=None, max_length=2000)

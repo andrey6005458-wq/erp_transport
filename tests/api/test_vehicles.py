@@ -273,3 +273,22 @@ async def test_get_vehicle_by_id_too_large_returns_422(
     response = await client.get(f"/api/v1/vehicles/{too_large}")
 
     assert response.status_code == 422
+
+
+async def test_create_vehicle_with_fuel_consumption(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """POST с расходом топлива."""
+    payload = {
+        "plate_number": "О957АУ",
+        "vin": "XTA1234567890ABCD",
+        "brand": "Mercedes",
+        "model": "Arocs",
+        "year": 2023,
+        "vehicle_type": "dump_truck",
+        "fuel_consumption_per_100km": "35.50",
+    }
+    response = await client.post("/api/v1/vehicles/", json=payload)
+
+    assert response.status_code == 201
+    assert response.json()["fuel_consumption_per_100km"] == "35.50"
