@@ -2,6 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     Integer,
@@ -85,6 +86,12 @@ class Vehicle(Base):
         Numeric(5, 2),
         nullable=True,
         comment="Расход л/час. Для спецтехники.",
+    )
+    has_attachment: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default="false",
+        comment="Есть навесное оборудование (гидромолот, трамбовка, ямобур).",
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
